@@ -85,6 +85,8 @@ def setup_controllers(context):
     policy_path_value = LaunchConfiguration('policy_path').perform(context)
     start_step_value = LaunchConfiguration('start_step').perform(context)
     ext_pos_corr = LaunchConfiguration('ext_pos_corr').perform(context)
+    ext_pos_topic = LaunchConfiguration('ext_pos_topic').perform(context)
+    ext_pos_frame = LaunchConfiguration('ext_pos_frame').perform(context)
 
     kv_pairs = []
     if policy_path_value:
@@ -94,7 +96,13 @@ def setup_controllers(context):
         kv_pairs.append(('walking_controller.motion.start_step', start_step_value))
     if ext_pos_corr.lower() in ["true", "1", "yes"]:
         kv_pairs.append(('state_estimator.estimation.contact.height_sensor_noise', 1e10))
-        kv_pairs.append(('state_estimator.estimation.position.topic', "/glim/odom"))
+        # Prefer explicit topic/frame if provided; otherwise keep previous default
+        if ext_pos_topic:
+            kv_pairs.append(('state_estimator.estimation.position.topic', ext_pos_topic))
+        else:
+            kv_pairs.append(('state_estimator.estimation.position.topic', "/glim/odom"))
+        if ext_pos_frame:
+            kv_pairs.append(('state_estimator.estimation.position.frame_id', ext_pos_frame))
 
     controllers_config_path = f'config/{robot_type_value}/controllers.yaml'
     temp_controllers_config_path = generate_temp_config(
@@ -217,6 +225,16 @@ def generate_launch_description():
             'ext_pos_corr',
             default_value='false',
             description='Enable external position correction'
+        ),
+        DeclareLaunchArgument(
+            'ext_pos_topic',
+            default_value='',
+            description='External pose/odom topic (e.g., /vicon/<robot>/<robot>)'
+        ),
+        DeclareLaunchArgument(
+            'ext_pos_frame',
+            default_value='',
+            description='External pose frame_id (e.g., vicon/world)'
         ),
         wandb,
         controllers_opaque_func,
