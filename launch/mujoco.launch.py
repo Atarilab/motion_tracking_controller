@@ -106,8 +106,9 @@ def setup_controllers(context):
         value=temp_controllers_config_path
     )
 
-    active_list = ["state_estimator", "walking_controller"]
-    inactive_list = ["standby_controller"]
+    # Start in standby to avoid first-frame target jump; switch to walking when ready.
+    active_list = ["state_estimator", "standby_controller"]
+    inactive_list = ["walking_controller"]
 
     active_spawner = control_spawner(active_list)
     inactive_spawner = control_spawner(inactive_list, inactive=True)
